@@ -39,7 +39,9 @@ class FlappyBirdGame():
 
         return reward
 
-    def run_trial(self, agent=FlappyBirdGame.random_agent):
+    def run_trial(self, agent=None):
+        if agent is None:
+            agent = self.random_agent
         if self.game.game_over():
             self.game.reset_game()
         rewards = []
@@ -52,13 +54,13 @@ class FlappyBirdGame():
             rewards.append(reward)
             observations.append(self.observation_to_array(observation))
 
-            # print(f'action: {action}')
-            # print(f'observation: {observation}')
-            # print(f'reward: {reward}')
+            print(f'action: {action}')
+            print(f'observation: {observation}')
+            print(f'reward: {reward}')
         return {'observations': observations,
                 'rewards': self.calculate_trial_reward(rewards)}
 
-    def run_epoch(self, n_trials, agent=FlappyBirdGame.random_agent):
+    def run_epoch(self, n_trials, agent=None):
         out_results = {'observations': np.empty(0), 'rewards': np.empty(0)}
         for i in range(n_trials):
             results = self.run_trial(agent)
