@@ -1,7 +1,8 @@
 import numpy as np
-from random import randint
+from random import randint, random
 from ple.games.flappybird import FlappyBird
 from ple import PLE
+import torch
 
 
 class FlappyBirdGame():
@@ -12,30 +13,35 @@ class FlappyBirdGame():
         self.reward_discount = reward_discount
 
     @staticmethod
-    def random_agent(observation=None):
-        return randint(0, 1)
+    def random_agent(*args, **kwargs):
+        return torch.rand(1)
 
-    def calculate_trial_reward(self, rewards_list):
-        rewards_output = [0] * len(rewards_list)
-        for i in range(len(rewards_output)):
-            discount_vector = [self.reward_discount] * (len(rewards_list) - i)
-            rewards_output[i] = sum(np.array(rewards_list[i:]) *
-                                    np.array(discount_vector) ** np.array(range(len(rewards_list) - i)))
-        return np.array(rewards_output)
+    def calculate_trial_reward(self, rewards_tensor):
+        rewards_output = torch.empty(rewards_tensor.shape[0])
+        for i in range(rewards_tensor.shape[0]):
+            discount_vector = torch.Tensor([self.reward_discount] * (rewards_tensor.shape[0] - i))
+            pv_rewards = sum(rewards_tensor[i:] * discount_vector ** torch.FloatTensor(range(rewards_tensor.shape[0] - i)))
+            rewards_output[i] = pv_rewards
+
+        return rewards_output
 
     @staticmethod
-    def observation_to_array(observation):
-        return np.array([observation['player_y'], observation['player_vel'], observation['next_pipe_dist_to_player'],
-                         observation['next_pipe_top_y'], observation['next_pipe_bottom_y'],
-                         observation['next_next_pipe_dist_to_player'], observation['next_next_pipe_top_y'],
-                         observation['next_next_pipe_bottom_y']])
+    def observation_to_torch_tensor(observation):
+        obs_tensor = torch.FloatTensor(
+            [observation['player_y'], observation['player_vel'], observation['next_pipe_dist_to_player'],
+             observation['next_pipe_top_y'], observation['next_pipe_bottom_y'],
+             observation['next_next_pipe_dist_to_player'], observation['next_next_pipe_top_y'],
+             observation['next_next_pipe_bottom_y']])
+
+        obs_tensor = obs_tensor.reshape((1, 8))
+        return obs_tensor
 
     def reward_function(self, game_return):
-        reward = 0
+        reward = torch.FloatTensor([0])
         if game_return == 0:
-            reward = 1
+            reward = torch.FloatTensor([1])
         if game_return == -5:
-            reward = -5
+            reward = torch.FloatTensor([-5])
 
         return reward
 
@@ -44,51 +50,47 @@ class FlappyBirdGame():
             agent = self.random_agent
         if self.game.game_over():
             self.game.reset_game()
-        rewards = []
-        observations = []
+        rewards = torch.empty(0)
+        observations = torch.empty((0, 8))
+        agent_decisions = torch.empty(0)
+        actual_decisions = torch.empty(0)
         while not self.game.game_over():
-            observation = self.game.getGameState()
-            action = self.actions[agent(observation)]
+            observation = self.observation_to_torch_tensor(self.game.getGameState())
+            agent_decision = agent(observation)
+
+            if agent_decision > random():
+                actual_decision = 1
+            else:
+                actual_decision = 0
+
+            action = self.actions[actual_decision]
             reward = self.reward_function(self.game.act(action))
 
-            rewards.append(reward)
-            observations.append(self.observation_to_array(observation))
-
-            print(f'action: {action}')
-            print(f'observation: {observation}')
-            print(f'reward: {reward}')
+            rewards = torch.cat((rewards, reward))
+            observations = torch.cat((observations, observation))
+            agent_decisions = torch.cat((agent_decisions, agent_decision))
+            actual_decisions = torch.cat((actual_decisions, torch.FloatTensor([actual_decision])))
+            # print(f'action: {action}')
+            # print(f'observation: {observation}')
+            # print(f'reward: {reward}')
         return {'observations': observations,
-                'rewards': self.calculate_trial_reward(rewards)}
+                'rewards': self.calculate_trial_reward(rewards),
+                'agent_decisions': agent_decisions,
+                'actual_decisions': actual_decisions}
 
     def run_epoch(self, n_trials, agent=None):
-        out_results = {'observations': np.empty(0), 'rewards': np.empty(0)}
+        out_results = {'observations': torch.empty(0), 'rewards': torch.empty(0),
+                       'agent_decisions': torch.empty(0), 'actual_decisions': torch.empty(0)}
         for i in range(n_trials):
             results = self.run_trial(agent)
-            out_results['observations']= np.append(out_results['observations'], results['observations'])
-            out_results['rewards'] = np.append(out_results['rewards'], results['rewards'])
+            out_results['observations'] = torch.cat((out_results['observations'], results['observations']))
+            out_results['rewards'] = torch.cat((out_results['rewards'], results['rewards']))
+            out_results['agent_decisions'] = torch.cat((out_results['agent_decisions'], results['agent_decisions']))
+            out_results['actual_decisions'] = torch.cat((out_results['actual_decisions'], results['actual_decisions']))
+
         return out_results
 
 
-
 if __name__ == '__main__':
-    test = FlappyBirdGame(display_screen=True)
+    test = FlappyBirdGame(display_screen=True, reward_discount=0.99)
     test.run_epoch(2)
-
-# test code
-# #
-# display_screen = True
-# fps = 30
-# game = PLE(FlappyBird(), fps=fps, display_screen=display_screen)
-# # agent = myAgentHere(allowed_actions=p.getActionSet())
-# nb_frames=1000
-# game.init()
-# reward = 0.0
-#
-# for i in range(nb_frames):
-#     if game.game_over():
-#            game.reset_game()
-#
-#     # print(game.getGameState())
-#     observation = game.getScreenRGB()
-#     action = game.getActionSet()[0]
-#     reward = game.act(action)
