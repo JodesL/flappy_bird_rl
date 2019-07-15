@@ -6,8 +6,10 @@ import torch
 
 
 class FlappyBirdGame():
-    def __init__(self, display_screen=True, fps=30, reward_discount=0.99):
-        self.game = PLE(FlappyBird(), fps=fps, display_screen=display_screen)
+    def __init__(self, reward_values={}, reward_discount=0.99, display_screen=True, fps=30, force_fps=True):
+        self.game = PLE(FlappyBird(pipe_gap=250),
+                        reward_values=reward_values,
+                        fps=fps, force_fps=force_fps, display_screen=display_screen)
         self.game.init()
         self.actions = self.game.getActionSet()
         self.reward_discount = reward_discount
@@ -37,15 +39,6 @@ class FlappyBirdGame():
         obs_tensor = obs_tensor.reshape((1, 8))
         return obs_tensor
 
-    def reward_function(self, game_return):
-        reward = torch.FloatTensor([0])
-        if game_return == 0:
-            reward = torch.FloatTensor([1])
-        if game_return == -5:
-            reward = torch.FloatTensor([-10])
-
-        return reward
-
     def run_trial(self, agent=None):
         if agent is None:
             agent = self.random_agent
@@ -67,15 +60,15 @@ class FlappyBirdGame():
             else:
                 action = self.actions[0]
 
-            reward = self.reward_function(self.game.act(action))
+            reward = torch.FloatTensor([self.game.act(action)])
 
             rewards = torch.cat((rewards, reward))
             observations = torch.cat((observations, observation))
             agent_decisions = torch.cat((agent_decisions, agent_decision))
             actual_decisions = torch.cat((actual_decisions, actual_decision))
-            # print(f'action: {action}')
-            # print(f'observation: {observation}')
-            # print(f'reward: {reward}')
+            print(f'action: {action}')
+            print(f'observation: {observation}')
+            print(f'reward: {reward}')
 
         return {'observations': observations,
                 'rewards': self.calculate_trial_reward(rewards),
@@ -96,5 +89,10 @@ class FlappyBirdGame():
 
 
 if __name__ == '__main__':
-    test = FlappyBirdGame(display_screen=True, reward_discount=0.99)
+    reward_values = {
+        "positive": 1.0,
+        "tick": 0.1,
+        "loss": -5.0
+    }
+    test = FlappyBirdGame(reward_values=reward_values, display_screen=True, reward_discount=0.99)
     test.run_epoch(2)
