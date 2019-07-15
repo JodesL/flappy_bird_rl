@@ -23,6 +23,7 @@ class FlappyBirdGame():
             pv_rewards = sum(rewards_tensor[i:] * discount_vector ** torch.FloatTensor(range(rewards_tensor.shape[0] - i)))
             rewards_output[i] = pv_rewards
 
+        rewards_output = rewards_output.reshape((-1, 1))
         return rewards_output
 
     @staticmethod
@@ -41,7 +42,7 @@ class FlappyBirdGame():
         if game_return == 0:
             reward = torch.FloatTensor([1])
         if game_return == -5:
-            reward = torch.FloatTensor([-5])
+            reward = torch.FloatTensor([-10])
 
         return reward
 
@@ -52,27 +53,30 @@ class FlappyBirdGame():
             self.game.reset_game()
         rewards = torch.empty(0)
         observations = torch.empty((0, 8))
-        agent_decisions = torch.empty(0)
-        actual_decisions = torch.empty(0)
+        agent_decisions = torch.empty((0, 1))
+        actual_decisions = torch.empty((0, 1))
         while not self.game.game_over():
             observation = self.observation_to_torch_tensor(self.game.getGameState())
             agent_decision = agent(observation)
 
-            if agent_decision > random():
-                actual_decision = 1
+            actual_decision = torch.bernoulli(agent_decision)
+            actual_decision = actual_decision.reshape((1, 1))
+            agent_decision = agent_decision.reshape((1, 1))
+            if actual_decision == 1:
+                action = self.actions[1]
             else:
-                actual_decision = 0
+                action = self.actions[0]
 
-            action = self.actions[actual_decision]
             reward = self.reward_function(self.game.act(action))
 
             rewards = torch.cat((rewards, reward))
             observations = torch.cat((observations, observation))
             agent_decisions = torch.cat((agent_decisions, agent_decision))
-            actual_decisions = torch.cat((actual_decisions, torch.FloatTensor([actual_decision])))
+            actual_decisions = torch.cat((actual_decisions, actual_decision))
             # print(f'action: {action}')
             # print(f'observation: {observation}')
             # print(f'reward: {reward}')
+
         return {'observations': observations,
                 'rewards': self.calculate_trial_reward(rewards),
                 'agent_decisions': agent_decisions,
