@@ -39,7 +39,7 @@ class FlappyBirdGame():
         obs_tensor = obs_tensor.reshape((1, 8))
         return obs_tensor
 
-    def run_trial(self, agent=None, verbose=False):
+    def run_trial(self, agent=None, sample=True, verbose=False):
         if agent is None:
             agent = self.random_agent
         if self.game.game_over():
@@ -52,7 +52,11 @@ class FlappyBirdGame():
             observation = self.observation_to_torch_tensor(self.game.getGameState())
             agent_decision = agent(observation)
 
-            actual_decision = torch.bernoulli(agent_decision)
+            if sample:
+                actual_decision = torch.bernoulli(agent_decision)
+            else:
+                actual_decision = torch.FloatTensor([1]) if agent_decision > 0.5 else torch.FloatTensor([0])
+
             actual_decision = actual_decision.reshape((1, 1))
             agent_decision = agent_decision.reshape((1, 1))
             if actual_decision == 1:
@@ -82,11 +86,11 @@ class FlappyBirdGame():
                 'agent_decisions': agent_decisions,
                 'actual_decisions': actual_decisions}
 
-    def run_n_trials(self, n_trials, agent=None):
+    def run_n_trials(self, n_trials, agent=None, sample=True):
         out_results = {'observations': torch.empty(0), 'rewards': torch.empty(0),
                        'agent_decisions': torch.empty(0), 'actual_decisions': torch.empty(0)}
         for i in range(n_trials):
-            results = self.run_trial(agent)
+            results = self.run_trial(agent, sample)
             out_results['observations'] = torch.cat((out_results['observations'], results['observations']))
             out_results['rewards'] = torch.cat((out_results['rewards'], results['rewards']))
             out_results['agent_decisions'] = torch.cat((out_results['agent_decisions'], results['agent_decisions']))

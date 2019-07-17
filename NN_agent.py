@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -24,12 +23,12 @@ class NNAgent(nn.Module):
         return x
 
 
-class flappy_bot():
+class FlappyBot():
     def __init__(self, NN_agent=None, path=None, flappy_bird_game_params={}):
         self.NN_agent = NNAgent
         self.path = path
         self.game = FlappyBirdGame(**flappy_bird_game_params)
-
+        self.flappy_bird_game_params = flappy_bird_game_params
         if self.path is not None:
             self.NN_agent = torch.load(self.path)
         assert self.NN_agent is not None, 'flappy_bot needs an agent to be initialized'
@@ -51,8 +50,8 @@ class flappy_bot():
             agent_decisions = results['agent_decisions']
             actual_decisions = results['actual_decisions']
 
-            ll = actual_decisions * agent_decisions + (1 - actual_decisions) * (
-                        1 - agent_decisions)  # likelihood of path
+            # likelihood of path
+            ll = actual_decisions * agent_decisions + (1 - actual_decisions) * (1 - agent_decisions)
             loss = torch.mul(torch.sum(torch.mul(torch.log(ll), rewards)), -1)
 
             optimizer.zero_grad()
@@ -68,13 +67,14 @@ class flappy_bot():
         if self.path is not None:
             self.save(self.path)
 
+    def run_trial(self, n_trials):
+        return self.game.run_n_trials(n_trials, self.NN_agent.forward, False)
+
     def save(self, path):
         torch.save(self.NN_agent, path)
 
 
 if __name__ == '__main__':
-    # noob = NNAgent()
-    # noob = torch.load("/home/jonah/PycharmProjects/flappy_bird_rl/trained_agents/trained_noob_250_gap.pytorch")
     test_bot_100_path = '/home/jonah/PycharmProjects/flappy_bird_rl/trained_agents/test_bot_100_gap.pytorch'
     flp_dict = {
         'force_fps': True,
@@ -87,54 +87,21 @@ if __name__ == '__main__':
         'reward_discount': 0.99
     }
 
-    test_bot = flappy_bot(path=test_bot_100_path,
-                          flappy_bird_game_params=flp_dict)
+    test_bot = FlappyBot(path=test_bot_100_path,
+                         flappy_bird_game_params=flp_dict)
 
-    test_bot.train(epochs=1, verbose=True)
+    test_bot.train(epochs=1000000, verbose=True)
 
-    # test_bot.init_game({
-    #     'force_fps': False,
-    #     'display_screen': True,
-    #     'reward_values': {
-    #         "positive": 1.0,
-    #         "tick": 0.1,
-    #         "loss": -5.0
-    #     },
-    #     'reward_discount': 0.99
-    # })
 
-    #
-    # reward_values={
-    #     "positive": 1.0,
-    #     "tick": 0.1,
-    #     "loss": -5.0
-    # }
-    #
-    # flp_game = FlappyBirdGame(force_fps=True, display_screen=False, reward_values=reward_values, reward_discount=0.99)
-    # number_rounds = 100000
-    # n_trials = 1
-    # learning_rate = 1e-4
-    # optimizer = optim.Adam(noob.parameters(), lr=learning_rate)
-    #
-    # for i in range(number_rounds):
-    #     results = flp_game.run_n_trials(n_trials, noob.forward)
-    #     if i % 50 == 0:
-    #         print(results['rewards'].max())
-    #         print(results['actual_decisions'].std())
-    #
-    #     rewards = results['rewards']
-    #     rewards = (rewards - rewards.mean())/rewards.std()
-    #     agent_decisions = results['agent_decisions']
-    #     actual_decisions = results['actual_decisions']
-    #
-    #     ll = actual_decisions * agent_decisions + (1 - actual_decisions) * (1 - agent_decisions)  #likelihood of path
-    #     loss = torch.mul(torch.sum(torch.mul(torch.log(ll), rewards)), -1)
-    #
-    #     optimizer.zero_grad()
-    #     loss.backward()
-    #     if i % 50 == 0:
-    #         print(loss.item())
-    #         torch.save(noob, "/home/jonah/PycharmProjects/flappy_bird_rl/noob.pytorch")
-    #     optimizer.step()
-    #
-    # torch.save(noob, "/home/jonah/PycharmProjects/flappy_bird_rl/noob.pytorch")
+    # gap_250_test_bot = FlappyBot(
+    #     path="/home/jonah/PycharmProjects/flappy_bird_rl/trained_agents/trained_bot_250_gap.pytorch",
+    #     flappy_bird_game_params={'force_fps': False,
+    #                              'display_screen': True,
+    #                              'reward_values': {
+    #                                  "positive": 1.0,
+    #                                  "tick": 0.1,
+    #                                  "loss": -5.0
+    #                              },
+    #                              'reward_discount': 0.99,
+    #                              'pip_gap': 250})
+    # gap_250_test_bot.run_trial(1)
