@@ -6,8 +6,8 @@ import torch
 
 
 class FlappyBirdGame():
-    def __init__(self, reward_values={}, reward_discount=0.99, display_screen=True, fps=30, force_fps=True):
-        self.game = PLE(FlappyBird(pipe_gap=250),
+    def __init__(self, reward_values={}, reward_discount=0.99, pip_gap=100, display_screen=True, fps=30, force_fps=True):
+        self.game = PLE(FlappyBird(pipe_gap=pip_gap),
                         reward_values=reward_values,
                         fps=fps, force_fps=force_fps, display_screen=display_screen)
         self.game.init()
@@ -39,7 +39,7 @@ class FlappyBirdGame():
         obs_tensor = obs_tensor.reshape((1, 8))
         return obs_tensor
 
-    def run_trial(self, agent=None):
+    def run_trial(self, agent=None, verbose=False):
         if agent is None:
             agent = self.random_agent
         if self.game.game_over():
@@ -62,20 +62,27 @@ class FlappyBirdGame():
 
             reward = torch.FloatTensor([self.game.act(action)])
 
+            # reward shaping
+            if (observation[0][0] < observation[0][4]) and (observation[0][0] > observation[0][3]):
+                reward = torch.add(reward, torch.tensor(0.2))
+            else:
+                reward = torch.add(reward, torch.tensor(-0.2))
+
             rewards = torch.cat((rewards, reward))
             observations = torch.cat((observations, observation))
             agent_decisions = torch.cat((agent_decisions, agent_decision))
             actual_decisions = torch.cat((actual_decisions, actual_decision))
-            print(f'action: {action}')
-            print(f'observation: {observation}')
-            print(f'reward: {reward}')
+            if verbose:
+                print(f'action: {action}')
+                print(f'observation: {observation}')
+                print(f'reward: {reward}')
 
         return {'observations': observations,
                 'rewards': self.calculate_trial_reward(rewards),
                 'agent_decisions': agent_decisions,
                 'actual_decisions': actual_decisions}
 
-    def run_epoch(self, n_trials, agent=None):
+    def run_n_trials(self, n_trials, agent=None):
         out_results = {'observations': torch.empty(0), 'rewards': torch.empty(0),
                        'agent_decisions': torch.empty(0), 'actual_decisions': torch.empty(0)}
         for i in range(n_trials):
@@ -94,5 +101,5 @@ if __name__ == '__main__':
         "tick": 0.1,
         "loss": -5.0
     }
-    test = FlappyBirdGame(reward_values=reward_values, display_screen=True, reward_discount=0.99)
-    test.run_epoch(2)
+    test = FlappyBirdGame(force_fps=False, reward_values=reward_values, display_screen=True, reward_discount=0.99)
+    test.run_n_trials(2)
