@@ -67,8 +67,8 @@ class FlappyBot():
         if self.path is not None:
             self.save(self.path)
 
-    def run_trial(self, n_trials):
-        return self.game.run_n_trials(n_trials, self.NN_agent.forward, False)
+    def run_trial(self, n_trials=1):
+        self.game.run_n_trials(n_trials, self.NN_agent.forward, False)
 
     def save(self, path):
         torch.save(self.NN_agent, path)
