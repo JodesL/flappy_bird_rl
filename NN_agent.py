@@ -75,7 +75,7 @@ class FlappyBot():
 
 
 if __name__ == '__main__':
-    test_bot_100_path = '/home/jonah/PycharmProjects/flappy_bird_rl/trained_agents/test_bot_100_gap.pytorch'
+    test_bot_100_path = 'trained_agents/test_bot_100_gap.pytorch'
     flp_dict = {
         'force_fps': True,
         'display_screen': False,
@@ -91,17 +91,3 @@ if __name__ == '__main__':
                          flappy_bird_game_params=flp_dict)
 
     test_bot.train(epochs=1000000, verbose=True)
-
-
-    # gap_250_test_bot = FlappyBot(
-    #     path="/home/jonah/PycharmProjects/flappy_bird_rl/trained_agents/trained_bot_250_gap.pytorch",
-    #     flappy_bird_game_params={'force_fps': False,
-    #                              'display_screen': True,
-    #                              'reward_values': {
-    #                                  "positive": 1.0,
-    #                                  "tick": 0.1,
-    #                                  "loss": -5.0
-    #                              },
-    #                              'reward_discount': 0.99,
-    #                              'pip_gap': 250})
-    # gap_250_test_bot.run_trial(1)

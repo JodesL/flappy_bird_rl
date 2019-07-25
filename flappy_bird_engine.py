@@ -67,10 +67,10 @@ class FlappyBirdGame():
             reward = torch.FloatTensor([self.game.act(action)])
 
             # reward shaping
-            if (observation[0][0] < observation[0][4]) and (observation[0][0] > observation[0][3]):
-                reward = torch.add(reward, torch.tensor(0.2))
-            else:
-                reward = torch.add(reward, torch.tensor(-0.2))
+            # if (observation[0][0] < observation[0][4]) and (observation[0][0] > observation[0][3]):
+            #     reward = torch.add(reward, torch.tensor(0.2))
+            # else:
+            #     reward = torch.add(reward, torch.tensor(-0.2))
 
             rewards = torch.cat((rewards, reward))
             observations = torch.cat((observations, observation))
