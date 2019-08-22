@@ -25,7 +25,7 @@ class NNAgent(nn.Module):
 
 class FlappyBot():
     def __init__(self, NN_agent=None, path=None, flappy_bird_game_params={}):
-        self.NN_agent = NNAgent
+        self.NN_agent = NN_agent
         self.path = path
         self.game = FlappyBirdGame(**flappy_bird_game_params)
         self.flappy_bird_game_params = flappy_bird_game_params
