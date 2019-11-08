@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from flappy_bird_engine import FlappyBirdGame
+from flappy_bird_rl.flappy_bird_engine import FlappyBirdGame
 
 
 class NNAgent(nn.Module):
